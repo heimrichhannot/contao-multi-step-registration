@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use HeimrichHannot\MultiStepRegistration\Contao\Dca\MemberRegistrationContentCallbacks;
 use HeimrichHannot\MultiStepRegistration\Controller\ContentElement\MultiStepRegistrationElementController;
 
 $dca = &$GLOBALS['TL_DCA']['tl_content'];
@@ -39,7 +38,6 @@ $dca['fields']['msrSteps'] = [
         'msrStepFields' => [
             'label' => &$GLOBALS['TL_LANG']['tl_content']['msrStepFields'],
             'inputType' => 'checkbox',
-            'options_callback' => [MemberRegistrationContentCallbacks::class, 'getEditableMemberFieldOptions'],
             'eval' => ['multiple' => true, 'mandatory' => true],
         ],
     ],

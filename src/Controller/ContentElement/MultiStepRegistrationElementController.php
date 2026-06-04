@@ -47,8 +47,10 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
     protected function getResponse(FragmentTemplate $template, ContentModel $model, Request $request): Response
     {
         $this->framework->initialize();
-        \Contao\System::loadLanguageFile('tl_member');
-        $this->framework->getAdapter(Controller::class)->loadDataContainer('tl_member');
+        /** @var Controller $controller */
+        $controller = $this->framework->getAdapter(Controller::class);
+        $controller->loadDataContainer('tl_member');
+        $controller->loadLanguageFile('tl_member');
 
         if ($token = $request->query->getString('token')) {
             if (str_starts_with($token, 'reg-')) {

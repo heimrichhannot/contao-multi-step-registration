@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\MultiStepRegistration\Contao\Dca;
+namespace HeimrichHannot\MultiStepRegistration\EventListener\DataContainer\Content;
 
 use Contao\Controller;
+use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
+use Contao\DataContainer;
 use Contao\System;
 
-class MemberRegistrationContentCallbacks
+class MemberRegistrationContentListener
 {
     /**
      * @return array<string, string>
      */
-    public static function getEditableMemberFieldOptions(): array
+    #[AsCallback(table: 'tl_content', target: 'fields.msrSteps.fields.msrStepFields.options')]
+    public function getEditableMemberFieldOptions(?DataContainer $dc = null): array
     {
         System::loadLanguageFile('tl_member');
         Controller::loadDataContainer('tl_member');
