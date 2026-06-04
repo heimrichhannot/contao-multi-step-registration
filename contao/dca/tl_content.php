@@ -28,17 +28,17 @@ $dca['fields']['msrSteps'] = [
         'msrStepKey' => [
             'label' => &$GLOBALS['TL_LANG']['tl_content']['msrStepKey'],
             'inputType' => 'text',
-            'eval' => ['maxlength' => 64, 'rgxp' => 'alias', 'style' => 'width:160px'],
+            'eval' => ['maxlength' => 64, 'rgxp' => 'alias', 'tl_class' => 'w33'],
         ],
         'msrStepLabel' => [
             'label' => &$GLOBALS['TL_LANG']['tl_content']['msrStepLabel'],
             'inputType' => 'text',
-            'eval' => ['maxlength' => 255, 'style' => 'width:220px'],
+            'eval' => ['maxlength' => 255, 'tl_class' => 'w33'],
         ],
         'msrStepFields' => [
             'label' => &$GLOBALS['TL_LANG']['tl_content']['msrStepFields'],
-            'inputType' => 'checkbox',
-            'eval' => ['multiple' => true, 'mandatory' => true],
+            'inputType' => 'select',
+            'eval' => ['multiple' => true, 'mandatory' => true, 'chosen' => true, 'tl_class' => 'w33'],
         ],
     ],
     'eval' => ['tl_class' => 'clr', 'mandatory' => true],

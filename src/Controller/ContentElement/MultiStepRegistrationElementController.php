@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsContentElement(self::TYPE, category: 'member', template: 'content_element/multi_step_registration')]
+#[AsContentElement(self::TYPE, category: 'user', template: 'content_element/multi_step_registration')]
 class MultiStepRegistrationElementController extends AbstractContentElementController
 {
     public const TYPE = 'huh_multi_step_registration';
@@ -47,7 +47,6 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
     protected function getResponse(FragmentTemplate $template, ContentModel $model, Request $request): Response
     {
         $this->framework->initialize();
-        /** @var Controller $controller */
         $controller = $this->framework->getAdapter(Controller::class);
         $controller->loadDataContainer('tl_member');
         $controller->loadLanguageFile('tl_member');
@@ -100,6 +99,7 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
             'attr_by_field' => $attributes,
             'data_storage' => new SessionDataStorage('huh_multi_step_registration_'.$model->id, $this->requestStack),
             'step_property_path' => 'currentStep',
+            ...$this->getCsrfFormOptions(),
         ]);
 
         $flow->handleRequest($request);

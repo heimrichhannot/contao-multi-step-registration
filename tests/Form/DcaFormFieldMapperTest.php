@@ -7,6 +7,7 @@ namespace HeimrichHannot\MultiStepRegistration\Tests\Form;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\MultiStepRegistration\Form\DcaFormFieldMapper;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Validator\Constraints\Email;
@@ -46,5 +47,43 @@ class DcaFormFieldMapperTest extends TestCase
 
         self::assertSame(RepeatedType::class, $type);
         self::assertSame('values[password]', $options['property_path']);
+    }
+
+    public function testItPreservesAssociativeNumericChoiceKeys(): void
+    {
+        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        [$type, $options] = $mapper->mapField('area', [
+            'inputType' => 'select',
+            'label' => ['Area', ''],
+            'options' => [
+                14 => 'Dresden',
+                22 => 'Leipzig',
+                'others' => 'Other',
+            ],
+            'eval' => ['multiple' => true],
+        ], [], []);
+
+        self::assertSame(ChoiceType::class, $type);
+        self::assertTrue($options['multiple']);
+        self::assertSame([
+            'Dresden' => '14',
+            'Leipzig' => '22',
+            'Other' => 'others',
+        ], $options['choices']);
+    }
+
+    public function testItSerializesMultipleValuesWithoutCsv(): void
+    {
+        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        $values = $mapper->normalizeSubmittedValues([
+            'area' => [
+                'inputType' => 'select',
+                'eval' => ['multiple' => true],
+            ],
+        ], [
+            'area' => ['22', '14', 'others'],
+        ]);
+
+        self::assertSame(serialize(['22', '14', 'others']), $values['area']);
     }
 }

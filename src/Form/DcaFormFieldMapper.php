@@ -211,8 +211,13 @@ class DcaFormFieldMapper
             $value = (new Date((string) $value, Date::getFormatFromRgxp((string) $eval['rgxp'])))->tstamp;
         }
 
-        if (($eval['multiple'] ?? false) && isset($eval['csv']) && \is_array($value)) {
-            $value = implode((string) $eval['csv'], $value);
+        if (($eval['multiple'] ?? false) && \is_array($value)) {
+            if (isset($eval['csv'])) {
+                $value = implode((string) $eval['csv'], $value);
+            } else {
+                ksort($value);
+                $value = serialize($value);
+            }
         }
 
         foreach (($dca['save_callback'] ?? []) as $callback) {
@@ -264,19 +269,34 @@ class DcaFormFieldMapper
     {
         $options = $dca['options'] ?? [];
 
-        if (\is_callable($dca['options_callback'] ?? null)) {
-            $options = ($dca['options_callback'])();
+        if (isset($dca['options_callback'])) {
+            $options = $this->executeOptionsCallback($dca['options_callback']);
         }
 
         $reference = $dca['reference'] ?? [];
         $choices = [];
+        $options = StringUtil::deserialize($options, true);
+        $isList = array_is_list($options);
 
-        foreach (StringUtil::deserialize($options, true) as $key => $value) {
-            $choiceValue = \is_string($key) ? $key : (string) $value;
+        foreach ($options as $key => $value) {
+            $choiceValue = $isList ? (string) $value : (string) $key;
             $label = $reference[$choiceValue][0] ?? $reference[$choiceValue] ?? $GLOBALS['TL_LANG']['MSC'][$choiceValue] ?? (string) $value;
             $choices[(string) $label] = $choiceValue;
         }
 
         return $choices;
+    }
+
+    private function executeOptionsCallback(mixed $callback): mixed
+    {
+        if (\is_array($callback)) {
+            return System::importStatic($callback[0])->{$callback[1]}();
+        }
+
+        if (\is_callable($callback)) {
+            return $callback();
+        }
+
+        return [];
     }
 }
