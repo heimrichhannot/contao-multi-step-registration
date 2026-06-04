@@ -2,7 +2,13 @@
 
 {% block content %}
     {% if message %}
-        <div class="message {{ message.type }}">{{ message.message }}</div>
+        {% set message_attributes = attrs()
+            .addClass('message')
+            .addClass(message.type)
+            .mergeWith(message_attributes|default)
+        %}
+
+        <div{{ message_attributes }}>{{ message.message }}</div>
     {% endif %}
 
     {% if form %}
@@ -11,9 +17,20 @@
 
             {% block visible_steps %}
                 {% if form.vars.visible_steps is defined and form.vars.visible_steps|length > 1 %}
-                    <ol class="multi-step-registration__steps">
+                    {% set steps_attributes = attrs()
+                        .addClass('multi-step-registration__steps')
+                        .mergeWith(steps_attributes|default)
+                    %}
+
+                    <ol{{ steps_attributes }}>
                         {% for step in form.vars.visible_steps %}
-                            <li class="{{ step.is_current_step ? 'active' : '' }}">{{ steps[step.index].label }}</li>
+                            {% set step_attributes = attrs()
+                                .addClass('active', step.is_current_step)
+                                .set('aria-current', 'step', step.is_current_step)
+                                .mergeWith(step_attributes|default)
+                            %}
+
+                            <li{{ step_attributes }}>{{ steps[step.index].label }}</li>
                         {% endfor %}
                     </ol>
                 {% endif %}
@@ -25,7 +42,12 @@
 
             {% block widgets %}
                 {% if attribute(form, current_step) is defined %}
-                    <fieldset class="multi-step-registration__step">
+                    {% set step_fieldset_attributes = attrs()
+                        .addClass('multi-step-registration__step')
+                        .mergeWith(step_fieldset_attributes|default)
+                    %}
+
+                    <fieldset{{ step_fieldset_attributes }}>
                         <legend>{{ steps[form.vars.cursor.stepIndex].label ?? current_step }}</legend>
                         {{ form_widget(attribute(form, current_step)) }}
                     </fieldset>
@@ -34,7 +56,12 @@
 
             {% block captcha %}
                 {% if captcha %}
-                    <div class="multi-step-registration__captcha">
+                    {% set captcha_attributes = attrs()
+                        .addClass('multi-step-registration__captcha')
+                        .mergeWith(captcha_attributes|default)
+                    %}
+
+                    <div{{ captcha_attributes }}>
                         {{ captcha|raw }}
                     </div>
                 {% endif %}
@@ -42,7 +69,12 @@
 
             {% block navigator %}
                 {% if form.navigator is defined %}
-                    <div class="multi-step-registration__navigator">
+                    {% set navigator_attributes = attrs()
+                        .addClass('multi-step-registration__navigator')
+                        .mergeWith(navigator_attributes|default)
+                    %}
+
+                    <div{{ navigator_attributes }}>
                         {{ form_widget(form.navigator) }}
                     </div>
                 {% endif %}
