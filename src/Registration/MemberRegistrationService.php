@@ -15,6 +15,8 @@ use Contao\FilesModel;
 use Contao\Folder;
 use Contao\Idna;
 use Contao\MemberModel;
+use Contao\Module;
+use Contao\ModuleModel;
 use Contao\OptInModel;
 use Contao\PageModel;
 use Contao\StringUtil;
@@ -73,8 +75,10 @@ class MemberRegistrationService
             $this->assignHomeDirectory($member, $data, $model);
         }
 
+        $module = $this->createHookModule($model);
+
         foreach (($GLOBALS['TL_HOOKS']['createNewUser'] ?? []) as $callback) {
-            System::importStatic($callback[0])->{$callback[1]}($member->id, $data, $model);
+            System::importStatic($callback[0])->{$callback[1]}($member->id, $data, $module);
         }
 
         $versions = new Versions('tl_member', $member->id);
@@ -129,8 +133,10 @@ class MemberRegistrationService
             $member->save();
             $optInToken->confirm();
 
+            $module = $this->createHookModule($model);
+
             foreach (($GLOBALS['TL_HOOKS']['activateAccount'] ?? []) as $callback) {
-                System::importStatic($callback[0])->{$callback[1]}($member, $model);
+                System::importStatic($callback[0])->{$callback[1]}($member, $module);
             }
 
             $this->logger?->info('User account ID '.$member->id.' ('.Idna::decodeEmail($member->email).') has been activated');
@@ -237,6 +243,19 @@ class MemberRegistrationService
                 return;
             }
         }
+    }
+
+    private function createHookModule(ContentModel $model): Module
+    {
+        $moduleModel = new ModuleModel();
+        $moduleModel->setRow($model->row());
+
+        return new class($moduleModel) extends Module
+        {
+            protected function compile(): void
+            {
+            }
+        };
     }
 
     /**

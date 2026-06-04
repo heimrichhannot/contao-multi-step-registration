@@ -35,8 +35,6 @@ class EditableMemberFieldProvider
             $options[$field] = $GLOBALS['TL_LANG']['tl_member'][$field][0] ?? $field;
         }
 
-        natcasesort($options);
-
         return $options;
     }
 

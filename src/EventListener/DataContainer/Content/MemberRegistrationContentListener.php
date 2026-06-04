@@ -28,8 +28,6 @@ class MemberRegistrationContentListener
             }
         }
 
-        natcasesort($options);
-
         return $options;
     }
 }
