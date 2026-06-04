@@ -1,0 +1,46 @@
+{
+  "name": "heimrichhannot/contao-multi-step-registration",
+  "type": "contao-bundle",
+  "description": "Multi-step member registration content element for Contao.",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.4",
+    "contao/core-bundle": "5.7.*",
+    "contao/manager-plugin": "^2.13",
+    "doctrine/dbal": "^3.8 || ^4.0",
+    "symfony/form": "^7.4",
+    "symfony/http-foundation": "^7.4",
+    "symfony/security-core": "^7.4",
+    "symfony/translation-contracts": "^3.0",
+    "symfony/validator": "^7.4",
+    "twig/twig": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "HeimrichHannot\\MultiStepRegistration\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "HeimrichHannot\\MultiStepRegistration\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "contao-manager-plugin": "HeimrichHannot\\MultiStepRegistration\\ContaoManager\\Plugin"
+  },
+  "require-dev": {
+    "contao/contao-rector": "dev-main",
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-symfony": "^2.0",
+    "phpunit/phpunit": "^11.0",
+    "rector/rector": "^2.4",
+    "symplify/easy-coding-standard": "^12.6"
+  },
+  "config": {
+    "allow-plugins": {
+      "contao-components/installer": true,
+      "contao/manager-plugin": true,
+      "php-http/discovery": false
+    }
+  }
+}

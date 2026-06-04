@@ -1,0 +1,52 @@
+{% extends "@Contao/content_element/_base.html.twig" %}
+
+{% block content %}
+    {% if message %}
+        <div class="message {{ message.type }}">{{ message.message }}</div>
+    {% endif %}
+
+    {% if form %}
+        {{ form_start(form) }}
+            {% set current_step = form.vars.cursor.currentStep %}
+
+            {% block visible_steps %}
+                {% if form.vars.visible_steps is defined and form.vars.visible_steps|length > 1 %}
+                    <ol class="multi-step-registration__steps">
+                        {% for step in form.vars.visible_steps %}
+                            <li class="{{ step.is_current_step ? 'active' : '' }}">{{ steps[step.index].label }}</li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+            {% endblock %}
+
+            {% block errors %}
+                {{ form_errors(form) }}
+            {% endblock %}
+
+            {% block widgets %}
+                {% if attribute(form, current_step) is defined %}
+                    <fieldset class="multi-step-registration__step">
+                        <legend>{{ steps[form.vars.cursor.stepIndex].label ?? current_step }}</legend>
+                        {{ form_widget(attribute(form, current_step)) }}
+                    </fieldset>
+                {% endif %}
+            {% endblock %}
+
+            {% block captcha %}
+                {% if captcha %}
+                    <div class="multi-step-registration__captcha">
+                        {{ captcha|raw }}
+                    </div>
+                {% endif %}
+            {% endblock %}
+
+            {% block navigator %}
+                {% if form.navigator is defined %}
+                    <div class="multi-step-registration__navigator">
+                        {{ form_widget(form.navigator) }}
+                    </div>
+                {% endif %}
+            {% endblock %}
+        {{ form_end(form) }}
+    {% endif %}
+{% endblock %}
