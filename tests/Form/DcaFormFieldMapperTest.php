@@ -72,6 +72,28 @@ class DcaFormFieldMapperTest extends TestCase
         ], $options['choices']);
     }
 
+    public function testItMapsStringReferenceLabelsWithoutTruncatingThem(): void
+    {
+        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        [$type, $options] = $mapper->mapField('type', [
+            'inputType' => 'select',
+            'label' => ['Member type', ''],
+            'options' => ['provider', 'initiative', 'default'],
+            'reference' => [
+                'provider' => 'Provider',
+                'initiative' => 'Initiative',
+                'default' => 'Other',
+            ],
+        ], [], []);
+
+        self::assertSame(ChoiceType::class, $type);
+        self::assertSame([
+            'Provider' => 'provider',
+            'Initiative' => 'initiative',
+            'Other' => 'default',
+        ], $options['choices']);
+    }
+
     public function testItSerializesMultipleValuesWithoutCsv(): void
     {
         $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));

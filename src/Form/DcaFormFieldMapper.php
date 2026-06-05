@@ -280,11 +280,29 @@ class DcaFormFieldMapper
 
         foreach ($options as $key => $value) {
             $choiceValue = $isList ? (string) $value : (string) $key;
-            $label = $reference[$choiceValue][0] ?? $reference[$choiceValue] ?? $GLOBALS['TL_LANG']['MSC'][$choiceValue] ?? (string) $value;
+            $label = $this->getChoiceLabel($choiceValue, (string) $value, $reference);
             $choices[(string) $label] = $choiceValue;
         }
 
         return $choices;
+    }
+
+    /**
+     * @param array<string, mixed> $reference
+     */
+    private function getChoiceLabel(string $choiceValue, string $fallback, array $reference): string
+    {
+        $label = $reference[$choiceValue] ?? null;
+
+        if (\is_array($label)) {
+            return (string) ($label[0] ?? $fallback);
+        }
+
+        if (null !== $label) {
+            return (string) $label;
+        }
+
+        return (string) ($GLOBALS['TL_LANG']['MSC'][$choiceValue] ?? $fallback);
     }
 
     private function executeOptionsCallback(mixed $callback): mixed
