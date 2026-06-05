@@ -6,6 +6,7 @@ Reusable Contao 5.7 extension that provides a configurable multi-step frontend r
 
 - PHP 8.4
 - Contao 5.7
+- `codefog/tags-bundle` 3.4 or newer for the sortable backend field selector
 
 ## Installation
 
@@ -20,6 +21,8 @@ Update the database afterward.
 ## Configuration
 
 Create a content element of type `huh_multi_step_registration` and configure the registration steps in the `msrSteps` row wizard.
+
+Each step contains a key, a backend label and the member fields for that step. The member field selector uses Codefog's `cfgTags` widget with sorting enabled, so editors can drag selected fields into the exact frontend order. New tags are disabled; the available values are generated from `tl_member` fields with `eval.feEditable`, matching Contao's registration field eligibility.
 
 ## Twig Template
 

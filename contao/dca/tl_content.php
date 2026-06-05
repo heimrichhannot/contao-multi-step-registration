@@ -28,17 +28,24 @@ $dca['fields']['msrSteps'] = [
         'msrStepKey' => [
             'label' => &$GLOBALS['TL_LANG']['tl_content']['msrStepKey'],
             'inputType' => 'text',
-            'eval' => ['maxlength' => 64, 'rgxp' => 'alias', 'tl_class' => 'w33'],
+            'eval' => ['maxlength' => 64, 'rgxp' => 'alias', 'tl_class' => 'w25', 'cell_class' => 'w25'],
         ],
         'msrStepLabel' => [
             'label' => &$GLOBALS['TL_LANG']['tl_content']['msrStepLabel'],
             'inputType' => 'text',
-            'eval' => ['maxlength' => 255, 'tl_class' => 'w33'],
+            'eval' => ['maxlength' => 255, 'tl_class' => 'w25'],
         ],
         'msrStepFields' => [
             'label' => &$GLOBALS['TL_LANG']['tl_content']['msrStepFields'],
-            'inputType' => 'select',
-            'eval' => ['multiple' => true, 'mandatory' => true, 'chosen' => true, 'tl_class' => 'w33'],
+            'inputType' => 'cfgTags',
+            'eval' => [
+                'tagsManager' => 'huh_msr_member_fields',
+                'tagsCreate' => false,
+                'hideList' => true,
+                'isSortable' => true,
+                'mandatory' => true,
+                'tl_class' => 'w50',
+            ],
         ],
     ],
     'eval' => ['tl_class' => 'clr', 'mandatory' => true],

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\MultiStepRegistration\ContaoManager;
 
+use Codefog\TagsBundle\CodefogTagsBundle;
 use Contao\CoreBundle\ContaoCoreBundle;
 use Contao\ManagerPlugin\Bundle\BundlePluginInterface;
 use Contao\ManagerPlugin\Bundle\Config\BundleConfig;
@@ -16,7 +17,7 @@ class Plugin implements BundlePluginInterface
     {
         return [
             BundleConfig::create(HeimrichHannotMultiStepRegistrationBundle::class)
-                ->setLoadAfter([ContaoCoreBundle::class]),
+                ->setLoadAfter([ContaoCoreBundle::class, CodefogTagsBundle::class]),
         ];
     }
 }
