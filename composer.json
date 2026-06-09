@@ -37,6 +37,9 @@
     "rector/rector": "^2.4",
     "symplify/easy-coding-standard": "^12.6"
   },
+  "suggest": {
+    "symfony/ux-turbo": "Required by the optional multi_step_registration/ux-turbo.html.twig template variant."
+  },
   "config": {
     "allow-plugins": {
       "contao-components/installer": true,

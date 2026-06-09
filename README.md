@@ -28,6 +28,11 @@ Each step contains a key, a backend label and the member fields for that step. T
 
 You can customize the frontend output creating a variant template of `content_element/multi_step_registration`
 
+An optional Symfony UX Turbo variant is available as `content_element/multi_step_registration/ux-turbo`.
+Use it only in host projects that install and load `symfony/ux-turbo`. It wraps the content element in a
+Turbo frame, submits intermediate steps asynchronously and keeps final registration redirects as full-page
+navigations.
+
 ## Runtime Behavior
 
 The frontend form is implemented as a Symfony form flow:
@@ -37,6 +42,8 @@ The frontend form is implemented as a Symfony form flow:
 - `NavigatorFlowType` renders previous, next and finish controls.
 - Flow state is stored in the session with a content-element-specific key.
 - The root form uses Contao CSRF options, so the hidden token field is `REQUEST_TOKEN` and validation uses `contao.csrf.token_manager`.
+- Successful step submissions use POST/Redirect/GET with HTTP 303 responses. Invalid submissions render
+  the current form with HTTP 422 so Turbo can replace the frame with validation errors.
 
 Member fields are derived from DCA configuration. The mapper handles labels, help texts, mandatory fields, length constraints, selected `rgxp` rules, unique checks, multiple values, DCA options and compatible save callbacks.
 

@@ -1,0 +1,88 @@
+{% extends "@Contao/content_element/_base.html.twig" %}
+
+{% block content %}
+    <turbo-frame id="{{ turbo_frame_id }}">
+        {% if message %}
+            {% set message_attributes = attrs()
+                .addClass('message')
+                .addClass(message.type)
+                .mergeWith(message_attributes|default)
+            %}
+
+            <div{{ message_attributes }}>{{ message.message }}</div>
+        {% endif %}
+
+        {% if form %}
+            {{ form_start(form) }}
+                {% set current_step = form.vars.cursor.currentStep %}
+
+                {% if form.vars.visible_steps is defined and form.vars.visible_steps|length > 1 %}
+                    {% set steps_attributes = attrs()
+                        .addClass('multi-step-registration__steps')
+                        .mergeWith(steps_attributes|default)
+                    %}
+
+                    <ol{{ steps_attributes }}>
+                        {% for step in form.vars.visible_steps %}
+                            {% set step_attributes = attrs()
+                                .addClass('active', step.is_current_step)
+                                .set('aria-current', 'step', step.is_current_step)
+                                .mergeWith(step_attributes|default)
+                            %}
+
+                            <li{{ step_attributes }}>{{ steps[step.index].label }}</li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+
+                {{ form_errors(form) }}
+
+                {% if attribute(form, current_step) is defined %}
+                    {% set step_fieldset_attributes = attrs()
+                        .addClass('multi-step-registration__step')
+                        .mergeWith(step_fieldset_attributes|default)
+                    %}
+
+                    <fieldset{{ step_fieldset_attributes }}>
+                        <legend>{{ steps[form.vars.cursor.stepIndex].label ?? current_step }}</legend>
+                        {{ form_widget(attribute(form, current_step)) }}
+                    </fieldset>
+                {% endif %}
+
+                {% if captcha %}
+                    {% set captcha_attributes = attrs()
+                        .addClass('multi-step-registration__captcha')
+                        .mergeWith(captcha_attributes|default)
+                    %}
+
+                    <div{{ captcha_attributes }}>
+                        {{ captcha|raw }}
+                    </div>
+                {% endif %}
+
+                {% if form.navigator is defined %}
+                    {% set navigator_attributes = attrs()
+                        .addClass('multi-step-registration__navigator')
+                        .mergeWith(navigator_attributes|default)
+                    %}
+
+                    <div{{ navigator_attributes }}>
+                        {% for button in form.navigator %}
+                            {% set button_attributes = button.vars.attr|default({}) %}
+
+                            {% if button.vars.name != 'previous' %}
+                                {% set button_attributes = button_attributes|merge({'value': button.vars.name}) %}
+                            {% endif %}
+
+                            {% if is_last_step|default(false) and button.vars.name == 'finish' %}
+                                {% set button_attributes = button_attributes|merge({'data-turbo-frame': '_top'}) %}
+                            {% endif %}
+
+                            {{ form_widget(button, {'attr': button_attributes}) }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {{ form_end(form) }}
+        {% endif %}
+    </turbo-frame>
+{% endblock %}

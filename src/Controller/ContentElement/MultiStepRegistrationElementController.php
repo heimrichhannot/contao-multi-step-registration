@@ -50,6 +50,8 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
         $controller = $this->framework->getAdapter(Controller::class);
         $controller->loadDataContainer('tl_member');
         $controller->loadLanguageFile('tl_member');
+        $template->set('turbo_frame_id', $this->getTurboFrameId($model));
+        $template->set('is_last_step', false);
 
         if ($token = $request->query->getString('token')) {
             if (str_starts_with($token, 'reg-')) {
@@ -64,6 +66,13 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
 
                 return $template->getResponse();
             }
+        }
+
+        if ($message = $this->consumeMessage($model, $request)) {
+            $template->set('form', null);
+            $template->set('message', $message);
+
+            return $template->getResponse();
         }
 
         $availableFields = $this->fieldProvider->getOptions();
@@ -120,19 +129,26 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
                 $flow->reset();
 
                 if ($redirect = $this->registrationService->createMember($values, $model, $request)) {
+                    $redirect->setStatusCode(Response::HTTP_SEE_OTHER);
+
                     return $redirect;
                 }
 
-                $template->set('form', null);
-                $template->set('message', [
+                $this->storeMessage($model, $request, [
                     'type' => 'confirm',
                     'message' => ($model->msrActivate ?? false)
                         ? $this->translator->trans('frontend.activation_mail_sent', domain: 'huh_multi_step_registration')
                         : $this->translator->trans('frontend.registration_complete', domain: 'huh_multi_step_registration'),
                 ]);
 
-                return $template->getResponse();
+                return $this->redirectToCurrentRequest($request);
             }
+        }
+
+        if ($flow->isSubmitted() && $flow->isValid()) {
+            $flow->getStepForm();
+
+            return $this->redirectToCurrentRequest($request);
         }
 
         $stepForm = $flow->getStepForm();
@@ -140,8 +156,66 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
         $template->set('captcha', $this->shouldShowCaptcha($model, $stepForm) ? $this->createCaptcha($model)->parse() : null);
         $template->set('message', null);
         $template->set('steps', $steps);
+        $template->set('is_last_step', $stepForm->getCursor()->isLastStep());
 
-        return $template->getResponse();
+        $response = $template->getResponse();
+
+        if ($flow->isSubmitted() && !$flow->isValid()) {
+            $response->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $response;
+    }
+
+    private function redirectToCurrentRequest(Request $request): RedirectResponse
+    {
+        return new RedirectResponse($request->getUri(), Response::HTTP_SEE_OTHER);
+    }
+
+    /**
+     * @return array{type: string, message: string}|null
+     */
+    private function consumeMessage(ContentModel $model, Request $request): ?array
+    {
+        if (!$request->hasSession()) {
+            return null;
+        }
+
+        $session = $request->getSession();
+        $key = $this->getMessageSessionKey($model);
+        $message = $session->get($key);
+        $session->remove($key);
+
+        if (!\is_array($message) || !\is_string($message['type'] ?? null) || !\is_string($message['message'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'type' => $message['type'],
+            'message' => $message['message'],
+        ];
+    }
+
+    /**
+     * @param array{type: string, message: string} $message
+     */
+    private function storeMessage(ContentModel $model, Request $request, array $message): void
+    {
+        if (!$request->hasSession()) {
+            return;
+        }
+
+        $request->getSession()->set($this->getMessageSessionKey($model), $message);
+    }
+
+    private function getMessageSessionKey(ContentModel $model): string
+    {
+        return 'huh_multi_step_registration_'.$model->id.'_message';
+    }
+
+    private function getTurboFrameId(ContentModel $model): string
+    {
+        return 'huh-msr-'.$model->id;
     }
 
     private function removeExpiredDuplicateRegistration(ContentModel $model, Request $request): void
