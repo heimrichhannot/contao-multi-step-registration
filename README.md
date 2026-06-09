@@ -2,6 +2,8 @@
 
 Reusable Contao 5.7 extension that provides a configurable multi-step frontend registration content element for `tl_member`.
 
+![Backend View](docs/img/screenshot_backend.png)
+
 ## Requirements
 
 - PHP 8.4
