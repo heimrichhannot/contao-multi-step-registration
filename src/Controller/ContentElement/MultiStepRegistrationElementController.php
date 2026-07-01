@@ -146,6 +146,7 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
         }
 
         if ($flow->isSubmitted() && $flow->isValid()) {
+            // Triggers the clicked flow button handler before the PRG redirect.
             $flow->getStepForm();
 
             return $this->redirectToCurrentRequest($request);
