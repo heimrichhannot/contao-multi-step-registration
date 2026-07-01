@@ -1,19 +1,28 @@
 {% extends "@Contao/content_element/_base.html.twig" %}
 
 {% block content %}
-    {% if message %}
-        {% set message_attributes = attrs()
-            .addClass('message')
-            .addClass(message.type)
-            .mergeWith(message_attributes|default)
-        %}
+    {% block message %}
+        {% if message %}
+            {% set message_attributes = attrs()
+                .addClass('message')
+                .addClass(message.type)
+                .mergeWith(message_attributes|default)
+            %}
 
-        <div{{ message_attributes }}>{{ message.message }}</div>
-    {% endif %}
+            <div{{ message_attributes }}>{{ message.message }}</div>
+        {% endif %}
+    {% endblock %}
 
-    {% if form %}
-        {{ form_start(form) }}
+    {% block form %}
+        {% if form %}
+            {% block form_start %}
+                {{ form_start(form) }}
+            {% endblock %}
+
             {% set current_step = form.vars.cursor.currentStep %}
+
+            {% block form_before_steps %}
+            {% endblock %}
 
             {% block visible_steps %}
                 {% if form.vars.visible_steps is defined and form.vars.visible_steps|length > 1 %}
@@ -79,6 +88,10 @@
                     </div>
                 {% endif %}
             {% endblock %}
-        {{ form_end(form) }}
-    {% endif %}
+
+            {% block form_end %}
+                {{ form_end(form) }}
+            {% endblock %}
+        {% endif %}
+    {% endblock %}
 {% endblock %}

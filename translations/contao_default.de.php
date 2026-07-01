@@ -1,0 +1,10 @@
+<?php
+
+return [
+    'CTE' => [
+        'huh_multi_step_registration' => [
+            'Mehrstufige Registrierung',
+            'Stellt eine in konfigurierbare Schritte aufgeteilte Mitgliederregistrierung bereit.',
+        ],
+    ],
+];

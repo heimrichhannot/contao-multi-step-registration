@@ -1,0 +1,62 @@
+<?php
+
+return [
+    'tl_content' => [
+        'msr_steps_legend' => 'Registrierungsschritte',
+        'msr_config_legend' => 'Registrierungseinstellungen',
+        'msr_home_dir_legend' => 'Home-Verzeichnis',
+        'msr_activation_legend' => 'Aktivierung',
+        'msrSteps' => [
+            0 => 'Schritte',
+            1 => 'Konfigurieren Sie die Registrierungsschritte und die Mitgliederfelder pro Schritt.',
+        ],
+        'msrStepKey' => [
+            0 => 'Schritt-Schlüssel',
+            1 => 'Optionaler technischer Schlüssel. Er muss in diesem Inhaltselement eindeutig sein.',
+        ],
+        'msrStepLabel' => [
+            0 => 'Schrittbezeichnung',
+            1 => 'Optionale sichtbare Bezeichnung für diesen Schritt.',
+        ],
+        'msrStepFields' => [
+            0 => 'Mitgliederfelder',
+            1 => 'Wählen Sie die bearbeitbaren Mitgliederfelder für diesen Schritt aus.',
+        ],
+        'msrDisableCaptcha' => [
+            0 => 'Sicherheitsfrage deaktivieren',
+            1 => 'Die Contao-Sicherheitsfrage nicht anzeigen.',
+        ],
+        'msrGroups' => [
+            0 => 'Mitgliedergruppen',
+            1 => 'Neue Mitglieder diesen Gruppen zuweisen.',
+        ],
+        'msrAllowLogin' => [
+            0 => 'Login erlauben',
+            1 => 'Dem neuen Mitglied nach der Aktivierung den Login erlauben.',
+        ],
+        'msrAssignDir' => [
+            0 => 'Home-Verzeichnis zuweisen',
+            1 => 'Für jedes neue Mitglied ein persönliches Verzeichnis erstellen und zuweisen.',
+        ],
+        'msrHomeDir' => [
+            0 => 'Home-Verzeichnis',
+            1 => 'Wählen Sie das Elternverzeichnis für Mitgliederverzeichnisse.',
+        ],
+        'msrActivate' => [
+            0 => 'Aktivierungslink senden',
+            1 => 'Vor der Nutzung des Kontos eine Aktivierungs-E-Mail senden.',
+        ],
+        'msrRegJumpTo' => [
+            0 => 'Zielseite nach Aktivierung',
+            1 => 'Nach erfolgreicher Aktivierung auf diese Seite weiterleiten.',
+        ],
+        'msrRegText' => [
+            0 => 'Text der Aktivierungs-E-Mail',
+            1 => 'Sie können Simple Tokens wie ##link## und ##activation## verwenden.',
+        ],
+        'msrJumpTo' => [
+            0 => 'Weiterleitungsseite nach Registrierung',
+            1 => 'Nach erfolgreicher Registrierung auf diese Seite weiterleiten.',
+        ],
+    ],
+];

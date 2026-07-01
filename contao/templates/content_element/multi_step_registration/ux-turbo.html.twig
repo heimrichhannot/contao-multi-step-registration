@@ -1,0 +1,32 @@
+{% extends "@Contao_HeimrichHannotMultiStepRegistrationBundle/content_element/multi_step_registration.html.twig" %}
+
+{% block content %}
+    <turbo-frame id="{{ turbo_frame_id }}">
+        {{ parent() }}
+    </turbo-frame>
+{% endblock %}
+
+{% block navigator %}
+    {% if form.navigator is defined %}
+        {% set navigator_attributes = attrs()
+            .addClass('multi-step-registration__navigator')
+            .mergeWith(navigator_attributes|default)
+        %}
+
+        <div{{ navigator_attributes }}>
+            {% for button in form.navigator %}
+                {% set button_attributes = button.vars.attr|default({}) %}
+
+                {% if button.vars.name != 'previous' %}
+                    {% set button_attributes = button_attributes|merge({'value': button.vars.name}) %}
+                {% endif %}
+
+                {% if is_last_step|default(false) and button.vars.name == 'finish' %}
+                    {% set button_attributes = button_attributes|merge({'data-turbo-frame': '_top'}) %}
+                {% endif %}
+
+                {{ form_widget(button, {'attr': button_attributes}) }}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

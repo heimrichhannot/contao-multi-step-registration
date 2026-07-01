@@ -7,7 +7,6 @@ namespace HeimrichHannot\MultiStepRegistration\Form;
 use HeimrichHannot\MultiStepRegistration\Registration\RegistrationStep;
 use Symfony\Component\Form\Flow\AbstractFlowType;
 use Symfony\Component\Form\Flow\FormFlowBuilderInterface;
-use Symfony\Component\Form\Flow\Type\NavigatorFlowType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class MemberRegistrationFlowType extends AbstractFlowType
@@ -24,7 +23,7 @@ class MemberRegistrationFlowType extends AbstractFlowType
             ]);
         }
 
-        $builder->add('navigator', NavigatorFlowType::class, [
+        $builder->add('navigator', MemberRegistrationNavigatorFlowType::class, [
             'translation_domain' => 'huh_multi_step_registration',
         ]);
     }
