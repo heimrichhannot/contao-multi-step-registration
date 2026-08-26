@@ -9,7 +9,8 @@ use Contao\ContentModel;
 use Contao\CoreBundle\Event\MemberActivationMailEvent;
 use Contao\CoreBundle\OptIn\OptInInterface;
 use Contao\CoreBundle\OptIn\OptInToken;
-use Contao\Email;
+use Contao\CoreBundle\Routing\ContentUrlGenerator;
+use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\Environment;
 use Contao\FilesModel;
 use Contao\Folder;
@@ -23,8 +24,12 @@ use Contao\StringUtil;
 use Contao\System;
 use Contao\Versions;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -35,7 +40,14 @@ class MemberRegistrationService
         private readonly OptInInterface $optIn,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly RouterInterface $router,
+        private readonly ContentUrlGenerator $contentUrlGenerator,
+        private readonly SimpleTokenParser $simpleTokenParser,
+        private readonly MailerInterface $mailer,
         private readonly TranslatorInterface $translator,
+        #[Autowire(param: 'contao.registration.expiration')]
+        private readonly int $registrationExpiration,
+        #[Autowire(param: 'kernel.project_dir')]
+        private readonly string $projectDir,
         private readonly ?LoggerInterface $logger = null,
     ) {
     }
@@ -91,7 +103,7 @@ class MemberRegistrationService
         }
 
         if ($target = PageModel::findById($model->msrJumpTo ?? null)) {
-            return new RedirectResponse(System::getContainer()->get('contao.routing.content_url_generator')->generate($target));
+            return new RedirectResponse($this->contentUrlGenerator->generate($target));
         }
 
         return null;
@@ -145,7 +157,7 @@ class MemberRegistrationService
         $redirect = null;
 
         if ($target = PageModel::findById($model->msrRegJumpTo ?? null)) {
-            $redirect = new RedirectResponse(System::getContainer()->get('contao.routing.content_url_generator')->generate($target));
+            $redirect = new RedirectResponse($this->contentUrlGenerator->generate($target));
         }
 
         return [
@@ -160,17 +172,21 @@ class MemberRegistrationService
      */
     private function sendActivationMail(array $data, ContentModel $model, Request $request): void
     {
-        $removeOn = new \DateTime('+'.System::getContainer()->getParameter('contao.registration.expiration').' days');
+        $removeOn = new \DateTime('+'.$this->registrationExpiration.' days');
         $optInToken = $this->optIn->create('reg', (string) $data['email'], ['tl_member' => [$data['id']]]);
-
-        if ($optInModel = OptInModel::findByToken($optInToken->getIdentifier())) {
-            $optInModel->removeOn = $removeOn->getTimestamp();
-            $optInModel->save();
-        }
 
         if (!$optInToken instanceof OptInToken) {
             return;
         }
+
+        $optInModel = OptInModel::findByToken($optInToken->getIdentifier());
+
+        if (null === $optInModel) {
+            return;
+        }
+
+        $optInModel->removeOn = $removeOn->getTimestamp();
+        $optInModel->save();
 
         $uri = $request->getUri();
 
@@ -190,8 +206,11 @@ class MemberRegistrationService
         $this->eventDispatcher->dispatch($event);
 
         if ($event->shouldSendOptInToken()) {
-            $text = System::getContainer()->get('contao.string.simple_token_parser')->parse($event->getText(), $event->getSimpleTokens());
-            $optInToken->send($event->getSubject(), $text);
+            $optInModel->emailSubject = $event->getSubject();
+            $optInModel->emailText = $this->simpleTokenParser->parse($event->getText(), $event->getSimpleTokens());
+            $optInModel->save();
+
+            $this->sendOptInMail($optInModel);
         }
     }
 
@@ -207,9 +226,8 @@ class MemberRegistrationService
         }
 
         $userDir = StringUtil::standardize((string) ($data['username'] ?? '')) ?: 'user_'.$member->id;
-        $projectDir = System::getContainer()->getParameter('kernel.project_dir');
 
-        while (is_dir($projectDir.'/'.$homeDir->path.'/'.$userDir)) {
+        while (is_dir($this->projectDir.'/'.$homeDir->path.'/'.$userDir)) {
             $userDir .= '_'.$member->id;
         }
 
@@ -238,11 +256,27 @@ class MemberRegistrationService
             $token = $this->optIn->find($model->token);
 
             if ($token && $token->isValid() && !$token->isConfirmed()) {
-                $token->send();
+                $this->sendOptInMail($model);
 
                 return;
             }
         }
+    }
+
+    private function sendOptInMail(OptInModel $model): void
+    {
+        if (!$model->emailSubject || !$model->emailText) {
+            throw new \LogicException('Please provide subject and text to send the token');
+        }
+
+        $email = new Email()
+            ->from($this->getSender())
+            ->to((string) $model->email)
+            ->subject((string) $model->emailSubject)
+            ->html((string) $model->emailText)
+        ;
+
+        $this->mailer->send($email);
     }
 
     private function createHookModule(ContentModel $model): Module
@@ -265,7 +299,9 @@ class MemberRegistrationService
     {
         $this->logger?->info('A new user (ID '.$id.') has registered on the website');
 
-        if (!isset($GLOBALS['TL_ADMIN_EMAIL'])) {
+        $adminEmail = $GLOBALS['TL_ADMIN_EMAIL'] ?? null;
+
+        if (!\is_string($adminEmail) || '' === $adminEmail) {
             return;
         }
 
@@ -285,12 +321,37 @@ class MemberRegistrationService
             $messageData .= ($GLOBALS['TL_LANG']['tl_member'][$key][0] ?? $key).': '.(\is_array($value) ? implode(', ', $value) : $value)."\n";
         }
 
-        $email = new Email();
-        $email->from = $GLOBALS['TL_ADMIN_EMAIL'];
-        $email->fromName = $GLOBALS['TL_ADMIN_NAME'] ?? null;
-        $email->subject = \sprintf($GLOBALS['TL_LANG']['MSC']['adminSubject'], Idna::decode(Environment::get('host')));
-        $email->text = \sprintf($GLOBALS['TL_LANG']['MSC']['adminText'], $id, $messageData."\n")."\n";
-        $email->sendTo($GLOBALS['TL_ADMIN_EMAIL']);
+        $email = new Email()
+            ->from($this->getSender())
+            ->to($adminEmail)
+            ->subject(\sprintf($GLOBALS['TL_LANG']['MSC']['adminSubject'], Idna::decode(Environment::get('host'))))
+            ->text(\sprintf($GLOBALS['TL_LANG']['MSC']['adminText'], $id, $messageData."\n")."\n")
+        ;
+
+        $this->mailer->send($email);
+    }
+
+    private function getSender(): Address
+    {
+        $adminEmail = $GLOBALS['TL_ADMIN_EMAIL'] ?? null;
+
+        if (\is_string($adminEmail) && '' !== $adminEmail) {
+            $adminName = $GLOBALS['TL_ADMIN_NAME'] ?? '';
+
+            return new Address($adminEmail, \is_string($adminName) ? $adminName : '');
+        }
+
+        $adminEmail = Config::get('adminEmail');
+
+        if (\is_string($adminEmail) && '' !== $adminEmail) {
+            [$name, $email] = StringUtil::splitFriendlyEmail($adminEmail);
+
+            if (\is_string($email) && '' !== $email) {
+                return new Address($email, \is_string($name) ? $name : '');
+            }
+        }
+
+        throw new \LogicException('No administrator e-mail address has been set.');
     }
 
     private function getModelValue(ContentModel $model, string $field): mixed

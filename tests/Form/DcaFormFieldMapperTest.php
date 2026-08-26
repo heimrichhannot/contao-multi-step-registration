@@ -10,6 +10,8 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
+use Symfony\Component\PasswordHasher\PasswordHasherInterface;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
@@ -18,7 +20,7 @@ class DcaFormFieldMapperTest extends TestCase
 {
     public function testItMapsEmailFieldsAndConstraints(): void
     {
-        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        $mapper = $this->createMapper();
         $dca = [
             'inputType' => 'text',
             'label' => ['Email', 'Your email address'],
@@ -31,14 +33,14 @@ class DcaFormFieldMapperTest extends TestCase
         self::assertSame(EmailType::class, $type);
         self::assertSame('values[email]', $options['property_path']);
         self::assertContainsOnlyInstancesOf(NotBlank::class, [$constraints[0]]);
-        self::assertContainsOnlyInstancesOf(Email::class, [$constraints[1]]);
-        self::assertContainsOnlyInstancesOf(Length::class, [$constraints[2]]);
+        self::assertContainsOnlyInstancesOf(Length::class, [$constraints[1]]);
+        self::assertContainsOnlyInstancesOf(Email::class, [$constraints[2]]);
         self::assertSame(255, $options['attr']['maxlength']);
     }
 
     public function testItMapsPasswordToRepeatedType(): void
     {
-        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        $mapper = $this->createMapper();
         [$type, $options] = $mapper->mapField('password', [
             'inputType' => 'password',
             'label' => ['Password', ''],
@@ -51,7 +53,7 @@ class DcaFormFieldMapperTest extends TestCase
 
     public function testItPreservesAssociativeNumericChoiceKeys(): void
     {
-        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        $mapper = $this->createMapper();
         [$type, $options] = $mapper->mapField('area', [
             'inputType' => 'select',
             'label' => ['Area', ''],
@@ -74,7 +76,7 @@ class DcaFormFieldMapperTest extends TestCase
 
     public function testItMapsStringReferenceLabelsWithoutTruncatingThem(): void
     {
-        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        $mapper = $this->createMapper();
         [$type, $options] = $mapper->mapField('type', [
             'inputType' => 'select',
             'label' => ['Member type', ''],
@@ -96,7 +98,7 @@ class DcaFormFieldMapperTest extends TestCase
 
     public function testItSerializesMultipleValuesWithoutCsv(): void
     {
-        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class));
+        $mapper = $this->createMapper();
         $values = $mapper->normalizeSubmittedValues([
             'area' => [
                 'inputType' => 'select',
@@ -107,5 +109,41 @@ class DcaFormFieldMapperTest extends TestCase
         ]);
 
         self::assertSame(serialize(['22', '14', 'others']), $values['area']);
+    }
+
+    public function testItHashesPasswordsWithTheInjectedHasherFactory(): void
+    {
+        $hasher = $this->createMock(PasswordHasherInterface::class);
+        $hasher
+            ->expects(self::once())
+            ->method('hash')
+            ->with('secret')
+            ->willReturn('hashed-password')
+        ;
+
+        $hasherFactory = $this->createMock(PasswordHasherFactoryInterface::class);
+        $hasherFactory
+            ->expects(self::once())
+            ->method('getPasswordHasher')
+            ->with(\Contao\FrontendUser::class)
+            ->willReturn($hasher)
+        ;
+
+        $mapper = new DcaFormFieldMapper($this->createMock(Connection::class), $hasherFactory);
+        $values = $mapper->normalizeSubmittedValues([
+            'password' => ['inputType' => 'password'],
+        ], [
+            'password' => 'secret',
+        ]);
+
+        self::assertSame('hashed-password', $values['password']);
+    }
+
+    private function createMapper(): DcaFormFieldMapper
+    {
+        return new DcaFormFieldMapper(
+            $this->createMock(Connection::class),
+            $this->createMock(PasswordHasherFactoryInterface::class),
+        );
     }
 }

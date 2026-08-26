@@ -21,6 +21,7 @@ use HeimrichHannot\MultiStepRegistration\Registration\StepNormalizer;
 use Symfony\Component\Form\Flow\DataStorage\SessionDataStorage;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\Flow\FormFlowInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -101,6 +102,7 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
             $attributes[$field] = $this->fieldMapper->createAttributes($config);
         }
 
+        /** @var FormFlowInterface $flow */
         $flow = $this->formFactory->createNamed('multi_step_registration_'.$model->id, MemberRegistrationFlowType::class, $data, [
             'steps' => $steps,
             'dca_fields' => $dcaFields,
