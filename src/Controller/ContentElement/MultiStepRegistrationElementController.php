@@ -21,6 +21,7 @@ use HeimrichHannot\MultiStepRegistration\Registration\StepNormalizer;
 use Symfony\Component\Form\Flow\DataStorage\SessionDataStorage;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\Flow\FormFlowInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -110,6 +111,7 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
             'step_property_path' => 'currentStep',
             ...$this->getCsrfFormOptions(),
         ]);
+        \assert($flow instanceof FormFlowInterface);
 
         $flow->handleRequest($request);
 

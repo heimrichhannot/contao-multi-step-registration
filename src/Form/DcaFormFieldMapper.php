@@ -19,6 +19,7 @@ use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\Length;
@@ -28,8 +29,10 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 class DcaFormFieldMapper
 {
-    public function __construct(private readonly Connection $connection)
-    {
+    public function __construct(
+        private readonly Connection $connection,
+        private readonly PasswordHasherFactoryInterface $passwordHasherFactory,
+    ) {
     }
 
     /**
@@ -200,8 +203,7 @@ class DcaFormFieldMapper
         }
 
         if ('password' === ($dca['inputType'] ?? null) && \is_string($value) && '' !== $value) {
-            $value = System::getContainer()
-                ->get('security.password_hasher_factory')
+            $value = $this->passwordHasherFactory
                 ->getPasswordHasher(FrontendUser::class)
                 ->hash($value);
         }
