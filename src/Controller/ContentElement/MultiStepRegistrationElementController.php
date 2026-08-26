@@ -12,6 +12,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Contao\FormCaptcha;
 use Contao\MemberModel;
+use HeimrichHannot\MultiStepRegistration\EventListener\InvalidFormResponseListener;
 use HeimrichHannot\MultiStepRegistration\Form\DcaFormFieldMapper;
 use HeimrichHannot\MultiStepRegistration\Form\MemberRegistrationFlowType;
 use HeimrichHannot\MultiStepRegistration\Registration\EditableMemberFieldProvider;
@@ -19,9 +20,9 @@ use HeimrichHannot\MultiStepRegistration\Registration\MemberRegistrationService;
 use HeimrichHannot\MultiStepRegistration\Registration\RegistrationFlowData;
 use HeimrichHannot\MultiStepRegistration\Registration\StepNormalizer;
 use Symfony\Component\Form\Flow\DataStorage\SessionDataStorage;
+use Symfony\Component\Form\Flow\FormFlowInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\Form\Flow\FormFlowInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -163,8 +164,16 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
 
         $response = $template->getResponse();
 
-        if ($flow->isSubmitted() && !$flow->isValid()) {
-            $response->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
+        if ($flow->isSubmitted() && ! $flow->isValid()) {
+            if ($request->headers->has('Turbo-Frame')) {
+                $response->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
+            } elseif ($mainRequest = $this->requestStack->getMainRequest()) {
+                // A non-successful fragment response aborts full-page rendering. Let the
+                // fragment render successfully and apply the 422 to the completed page.
+                $mainRequest->attributes->set(InvalidFormResponseListener::REQUEST_ATTRIBUTE, true);
+            } else {
+                $response->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
         }
 
         return $response;
