@@ -55,7 +55,7 @@ return [
             1 => 'Use simple tokens such as ##link## and ##activation##.',
         ],
         'msrJumpTo' => [
-            0 => 'Success redirect page',
+            0 => 'Redirect page after submitting the form',
             1 => 'Redirect to this page after successful registration.',
         ],
     ],

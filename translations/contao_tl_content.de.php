@@ -55,7 +55,7 @@ return [
             1 => 'Sie können Simple Tokens wie ##link## und ##activation## verwenden.',
         ],
         'msrJumpTo' => [
-            0 => 'Weiterleitungsseite nach Registrierung',
+            0 => 'Weiterleitungsseite nach Absenden des Formulars',
             1 => 'Nach erfolgreicher Registrierung auf diese Seite weiterleiten.',
         ],
     ],
