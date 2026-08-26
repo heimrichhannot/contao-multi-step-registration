@@ -26,7 +26,7 @@ jobs:
           tools: composer:v2
 
       - name: Select Contao version
-        run: composer require --no-update "contao/core-bundle:${{ matrix.contao }}" "contao/test-case:${{ matrix.contao }}"
+        run: composer require --no-update "contao/core-bundle:${{ matrix.contao }}"
 
       - name: Install dependencies
         run: composer update --no-interaction --prefer-dist
