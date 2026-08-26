@@ -102,6 +102,7 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
             $attributes[$field] = $this->fieldMapper->createAttributes($config);
         }
 
+        /** @var FormFlowInterface $flow */
         $flow = $this->formFactory->createNamed('multi_step_registration_'.$model->id, MemberRegistrationFlowType::class, $data, [
             'steps' => $steps,
             'dca_fields' => $dcaFields,
@@ -111,7 +112,6 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
             'step_property_path' => 'currentStep',
             ...$this->getCsrfFormOptions(),
         ]);
-        \assert($flow instanceof FormFlowInterface);
 
         $flow->handleRequest($request);
 
