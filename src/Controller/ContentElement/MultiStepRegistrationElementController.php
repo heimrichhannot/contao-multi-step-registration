@@ -12,6 +12,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Contao\FormCaptcha;
 use Contao\MemberModel;
+use HeimrichHannot\MultiStepRegistration\EventListener\InvalidFormResponseListener;
 use HeimrichHannot\MultiStepRegistration\Form\DcaFormFieldMapper;
 use HeimrichHannot\MultiStepRegistration\Form\MemberRegistrationFlowType;
 use HeimrichHannot\MultiStepRegistration\Registration\EditableMemberFieldProvider;
@@ -19,9 +20,9 @@ use HeimrichHannot\MultiStepRegistration\Registration\MemberRegistrationService;
 use HeimrichHannot\MultiStepRegistration\Registration\RegistrationFlowData;
 use HeimrichHannot\MultiStepRegistration\Registration\StepNormalizer;
 use Symfony\Component\Form\Flow\DataStorage\SessionDataStorage;
+use Symfony\Component\Form\Flow\FormFlowInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\Form\Flow\FormFlowInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -119,11 +120,15 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
             $flow->addError(new FormError($GLOBALS['TL_LANG']['ERR']['passwordName'] ?? $this->translator->trans('frontend.password_matches_username', domain: 'huh_multi_step_registration')));
         }
 
-        if ($flow->isSubmitted() && $flow->isValid() && $flow->isFinished() && !$this->isCaptchaValid($model)) {
-            $flow->addError(new FormError($GLOBALS['TL_LANG']['ERR']['captcha'] ?? $this->translator->trans('frontend.captcha_invalid', domain: 'huh_multi_step_registration')));
+        $captcha = $this->shouldShowCaptcha($model, $flow) ? $this->createCaptcha($model) : null;
+
+        if ($flow->isSubmitted() && $flow->isValid() && $flow->isFinished() && null !== $captcha) {
+            $captcha->validate();
         }
 
-        if ($flow->isSubmitted() && $flow->isValid() && $flow->isFinished()) {
+        $captchaIsValid = null === $captcha || ! $captcha->hasErrors();
+
+        if ($flow->isSubmitted() && $flow->isValid() && $flow->isFinished() && $captchaIsValid) {
             $submittedData = $flow->getData();
 
             if ($submittedData instanceof RegistrationFlowData) {
@@ -147,24 +152,33 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
             }
         }
 
-        if ($flow->isSubmitted() && $flow->isValid()) {
+        if ($flow->isSubmitted() && $flow->isValid() && $captchaIsValid) {
             // Triggers the clicked flow button handler before the PRG redirect.
             $flow->getStepForm();
 
             return $this->redirectToCurrentRequest($request);
         }
 
-        $stepForm = $flow->getStepForm();
+        // Do not let the finish button reset the flow before the captcha fallback is rendered.
+        $stepForm = $captchaIsValid ? $flow->getStepForm() : $flow;
         $template->set('form', $stepForm->createView());
-        $template->set('captcha', $this->shouldShowCaptcha($model, $stepForm) ? $this->createCaptcha($model)->parse() : null);
+        $template->set('captcha', $captcha?->parse());
         $template->set('message', null);
         $template->set('steps', $steps);
         $template->set('is_last_step', $stepForm->getCursor()->isLastStep());
 
         $response = $template->getResponse();
 
-        if ($flow->isSubmitted() && !$flow->isValid()) {
-            $response->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
+        if ($flow->isSubmitted() && (! $flow->isValid() || ! $captchaIsValid)) {
+            if ($request->headers->has('Turbo-Frame')) {
+                $response->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
+            } elseif ($mainRequest = $this->requestStack->getMainRequest()) {
+                // A non-successful fragment response aborts full-page rendering. Let the
+                // fragment render successfully and apply the 422 to the completed page.
+                $mainRequest->attributes->set(InvalidFormResponseListener::REQUEST_ATTRIBUTE, true);
+            } else {
+                $response->setStatusCode(Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
         }
 
         return $response;
@@ -260,18 +274,6 @@ class MultiStepRegistrationElementController extends AbstractContentElementContr
     private function shouldShowCaptcha(ContentModel $model, mixed $flow): bool
     {
         return !($model->msrDisableCaptcha ?? false) && method_exists($flow, 'getCursor') && $flow->getCursor()->isLastStep();
-    }
-
-    private function isCaptchaValid(ContentModel $model): bool
-    {
-        if ($model->msrDisableCaptcha ?? false) {
-            return true;
-        }
-
-        $captcha = $this->createCaptcha($model);
-        $captcha->validate();
-
-        return !$captcha->hasErrors();
     }
 
     private function createCaptcha(ContentModel $model): FormCaptcha

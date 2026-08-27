@@ -45,7 +45,8 @@ The frontend form is implemented as a Symfony form flow:
 - Flow state is stored in the session with a content-element-specific key.
 - The root form uses Contao CSRF options, so the hidden token field is `REQUEST_TOKEN` and validation uses `contao.csrf.token_manager`.
 - Successful step submissions use POST/Redirect/GET with HTTP 303 responses. Invalid submissions render
-  the current form with HTTP 422 so Turbo can replace the frame with validation errors.
+  the current form with HTTP 422. Frame submissions replace the frame; final `_top` submissions receive a
+  complete page response so Turbo can display the validation errors without clearing the form.
 
 Member fields are derived from DCA configuration. The mapper handles labels, help texts, mandatory fields, length constraints, selected `rgxp` rules, unique checks, multiple values, DCA options and compatible save callbacks.
 
