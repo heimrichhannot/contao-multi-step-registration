@@ -6,15 +6,22 @@ namespace HeimrichHannot\MultiStepRegistration\Tests\Form;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\MultiStepRegistration\Form\DcaFormFieldMapper;
+use HeimrichHannot\MultiStepRegistration\Form\MemberRegistrationStepType;
+use HeimrichHannot\MultiStepRegistration\Registration\RegistrationFlowData;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
+use Symfony\Component\Form\Forms;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\PasswordHasher\PasswordHasherInterface;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Validation;
 
 class DcaFormFieldMapperTest extends TestCase
 {
@@ -137,6 +144,48 @@ class DcaFormFieldMapperTest extends TestCase
         ]);
 
         self::assertSame('hashed-password', $values['password']);
+    }
+
+    #[DataProvider('checkboxCases')]
+    public function testCheckboxRequirementAndSubmission(?bool $mandatory, bool $checked): void
+    {
+        $mapper = $this->createMapper();
+        $dca = [
+            'inputType' => 'checkbox',
+            'eval' => $mandatory === null ? [] : ['mandatory' => $mandatory],
+        ];
+        $factory = Forms::createFormFactoryBuilder()
+            ->addExtension(new ValidatorExtension(Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator()))
+            ->addType(new MemberRegistrationStepType($mapper))
+            ->getFormFactory();
+        $data = new RegistrationFlowData();
+        $form = $factory->createBuilder(FormType::class, $data)
+            ->add('login', MemberRegistrationStepType::class, [
+                'fields' => ['terms'],
+                'step_label' => 'Login',
+                'dca_fields' => ['terms' => $dca],
+                'constraints_by_field' => ['terms' => $mapper->createConstraints('terms', $dca)],
+                'attr_by_field' => [],
+            ])
+            ->getForm();
+
+        $form->submit(['login' => $checked ? ['terms' => '1'] : []]);
+
+        self::assertSame(!$mandatory || $checked, $form->isValid());
+        self::assertSame($checked, $data->values['terms']);
+        $view = $form->createView()['login']['terms'];
+        self::assertSame($checked, $view->vars['checked']);
+        self::assertSame((bool) $mandatory, $view->vars['required']);
+    }
+
+    public static function checkboxCases(): iterable
+    {
+        yield 'mandatory unchecked' => [true, false];
+        yield 'mandatory checked' => [true, true];
+        yield 'optional unchecked' => [false, false];
+        yield 'optional checked' => [false, true];
+        yield 'unspecified unchecked' => [null, false];
+        yield 'unspecified checked' => [null, true];
     }
 
     private function createMapper(): DcaFormFieldMapper
