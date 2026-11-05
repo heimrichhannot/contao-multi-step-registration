@@ -67,10 +67,6 @@ class DcaFormFieldMapper
             $options['placeholder'] = ($eval['includeBlankOption'] ?? false) ? '' : null;
         }
 
-        if (CheckboxType::class === $type) {
-            $options['required'] = false;
-        }
-
         if (DateType::class === $type) {
             $options['widget'] = 'single_text';
             $options['html5'] = true;
